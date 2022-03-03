@@ -140,7 +140,7 @@ func (e *entry) writeOut(writer io.Writer) (int, error) {
 	outBuf.WriteString(string(e.level))
 	outBuf.WriteString("] ")
 	outBuf.WriteString(e.time + " ")
-	outBuf.WriteString(e.file + " ")
+	outBuf.WriteString(e.file + ":")
 	outBuf.WriteString(strconv.Itoa(e.line) + " ")
 	outBuf.WriteString(e.function + " ")
 	outBuf.WriteString(e.msg)
