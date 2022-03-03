@@ -157,9 +157,8 @@ func (e *entry) writeOut(writer io.Writer) (int, error) {
 	var key string
 	for i := 0; i < len(e.fields); i++ {
 		key, _ = e.fields[i][0].(string)
-		switch e.fields[i][1].(type) {
+		switch s := e.fields[i][1].(type) {
 		case string:
-			s = e.fields[i][1].(string)
 			// 生支持json的输出 去除 JsonStr
 			if len(s) > 0 {
 				if (s[0] == '{' && s[len(s)-1] == '}') || (s[0] == '[' && s[len(s)-1] == ']') {
@@ -167,9 +166,8 @@ func (e *entry) writeOut(writer io.Writer) (int, error) {
 					break
 				}
 			}
-			elem = `"` + key + `":"` + s + `"`
+			elem = fmt.Sprintf(`"%s":%q`, key, s)
 		case []byte:
-			s = string(e.fields[i][1].([]byte))
 			// 生支持json的输出 去除 JsonStr
 			if len(s) > 0 {
 				if (s[0] == '{' && s[len(s)-1] == '}') || (s[0] == '[' && s[len(s)-1] == ']') {
@@ -177,17 +175,15 @@ func (e *entry) writeOut(writer io.Writer) (int, error) {
 					break
 				}
 			}
-			elem = `"` + key + `":"` + s + `"`
+			elem = fmt.Sprintf(`"%s":%q`, key, string(s))
 		case fmt.Stringer:
-			s = e.fields[i][1].(fmt.Stringer).String()
-			elem = `"` + key + `":"` + s + `"`
+			elem = `"` + key + `":"` + s.String() + `"`
 		default:
-			b, err = json.Marshal(e.fields[i][1]) // 效率和fmt.Sprintf差不多
+			b, err = json.Marshal(s) // 效率和fmt.Sprintf差不多
 			if err == nil {
-				elem = `"` + key + `":` + string(b)
+				elem = fmt.Sprintf(`"%s":%s`, key, string(b))
 			} else {
-				s = fmt.Sprintf(`%+v`, e.fields[i][1])
-				elem = `"` + key + `":"` + s + `"`
+				elem = fmt.Sprintf(`"%s":%+v`, key, s)
 			}
 		}
 		if i != 0 {
