@@ -7,12 +7,16 @@ import (
 	"testing"
 )
 
+type AAA struct {
+	aa string
+	BB int64
+}
 func TestCtx(t *testing.T) {
 	f, err := os.Create("mylog_err.log")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	Init( os.Stdout, os.Stderr, io.MultiWriter(os.Stdout, os.Stderr, f), "tid")
+	Init(os.Stdout, os.Stderr, io.MultiWriter(os.Stdout, os.Stderr, f), "tid")
 	tid := 123456 // tid maybe stand for trace id? It can be generated: github.com/vito-go/logging/tid
 	ctx := context.WithValue(context.Background(), "tid", tid)
 
@@ -28,5 +32,13 @@ func TestCtx(t *testing.T) {
 	Ctx(ctx).WithFields("name", "jack", "age", 18).Info("this is jack")
 	Ctx(ctx).WithFields("name", "jack", "age", 18).Error("error this is jack")
 	// [INFO] 2022-01-11 15:51:26.792 mylog_test.go:20 [mylog.TestCtx] this is jack {"tid":123456,"name":"jack","age":18}
+	b := []byte("hello")
+	bPtr:=&b
+	Ctx(ctx).WithField("bPtr", bPtr).Info("bPtr----")
+
+	var bNil []byte
+	bPtr=&bNil
+	Ctx(ctx).WithField("bPtr", bPtr).Info("bPtr----")
+	Ctx(ctx).WithField("AAA", &AAA{}).Info("AAA----")
 
 }

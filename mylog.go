@@ -3,13 +3,11 @@ package mylog
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -136,60 +134,29 @@ func (e *entry) writeOut(writer io.Writer) (int, error) {
 	outBuf := outBufPool.Get().(*bytes.Buffer)
 	outBuf.Reset()
 	defer func() { outBufPool.Put(outBuf) }()
-	outBuf.WriteString("[")
-	outBuf.WriteString(string(e.level))
-	outBuf.WriteString("] ")
-	outBuf.WriteString(e.time + " ")
-	outBuf.WriteString(e.file + ":")
-	outBuf.WriteString(strconv.Itoa(e.line) + " ")
-	outBuf.WriteString(e.function + " ")
-	outBuf.WriteString(e.msg)
+	outBuf.WriteString(fmt.Sprintf("[%s] %s %s:%d %s %s", e.level, e.time, e.file, e.line, e.function, e.msg))
 	if len(e.fields) == 0 {
 		outBuf.WriteString("\n")
 		return writer.Write(outBuf.Bytes())
 	}
 	outBuf.WriteString(" {")
-	// index := copy(outBuf, fmt.Sprintf("[%s] %s %s:%d [%s] %s {", e.level, e.time, e.file, e.line, e.function, e.msg))
-	var elem string
-	var s string
-	var b []byte
-	var err error
 	var key string
 	for i := 0; i < len(e.fields); i++ {
-		key, _ = e.fields[i][0].(string)
-		switch s := e.fields[i][1].(type) {
-		case string:
-			// 生支持json的输出 去除 JsonStr
-			if len(s) > 0 {
-				if (s[0] == '{' && s[len(s)-1] == '}') || (s[0] == '[' && s[len(s)-1] == ']') {
-					elem = `"` + key + `":` + s
-					break
-				}
-			}
-			elem = fmt.Sprintf(`"%s":%q`, key, s)
-		case []byte:
-			// 生支持json的输出 去除 JsonStr
-			if len(s) > 0 {
-				if (s[0] == '{' && s[len(s)-1] == '}') || (s[0] == '[' && s[len(s)-1] == ']') {
-					elem = `"` + key + `":` + s
-					break
-				}
-			}
-			elem = fmt.Sprintf(`"%s":%q`, key, string(s))
-		case fmt.Stringer:
-			elem = `"` + key + `":"` + s.String() + `"`
-		default:
-			b, err = json.Marshal(s) // 效率和fmt.Sprintf差不多
-			if err == nil {
-				elem = fmt.Sprintf(`"%s":%s`, key, string(b))
-			} else {
-				elem = fmt.Sprintf(`"%s":%+v`, key, s)
-			}
-		}
 		if i != 0 {
-			elem = "," + elem
+			outBuf.WriteString(",")
 		}
-		outBuf.WriteString(elem)
+		key, _ = e.fields[i][0].(string)
+		outBuf.WriteString(fmt.Sprintf(`"%s":`, key))
+		switch s := e.fields[i][1].(type) {
+		default:
+			outBuf.WriteString(fmt.Sprintf(`%+v`, s))
+		case []byte:
+			outBuf.WriteString(fmt.Sprintf(`%s`, s))
+		case *[]byte:
+			outBuf.Write(*s)
+		case *string:
+			outBuf.WriteString(*s)
+		}
 	}
 	outBuf.WriteString("}\n")
 	return writer.Write(outBuf.Bytes())
