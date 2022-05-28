@@ -3,6 +3,7 @@ package mylog
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -141,6 +142,7 @@ func (e *entry) writeOut(writer io.Writer) (int, error) {
 	}
 	outBuf.WriteString(" {")
 	var key string
+	var err error
 	for i := 0; i < len(e.fields); i++ {
 		if i != 0 {
 			outBuf.WriteString(",")
@@ -149,9 +151,25 @@ func (e *entry) writeOut(writer io.Writer) (int, error) {
 		outBuf.WriteString(fmt.Sprintf(`"%s":`, key))
 		switch s := e.fields[i][1].(type) {
 		default:
-			outBuf.WriteString(fmt.Sprintf(`%+v`, s))
+			var buf bytes.Buffer
+			j := json.NewEncoder(&buf)
+			j.SetEscapeHTML(false)
+			if err = j.Encode(s); err == nil {
+				if b := buf.Bytes(); len(b) > 0 {
+					// remove the last \n . more to see Encode.
+					outBuf.Write(b[:len(b)-1])
+				} else {
+					outBuf.Write(nil)
+				}
+			} else {
+				outBuf.WriteString(fmt.Sprintf("%+v", s))
+			}
+		case int, bool, int64, float32, float64, uint, uint8, uint16, uint32, uint64:
+			outBuf.WriteString(fmt.Sprintf("%+v", s))
+		case string:
+			outBuf.WriteString(s)
 		case []byte:
-			outBuf.WriteString(fmt.Sprintf(`%s`, s))
+			outBuf.Write(s)
 		case *[]byte:
 			outBuf.Write(*s)
 		case *string:
