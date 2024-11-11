@@ -2,43 +2,56 @@ package mylog
 
 import (
 	"context"
-	"io"
-	"os"
 	"testing"
 )
 
-type AAA struct {
-	aa string
-	BB int64
+type UserInfo struct {
+	Name string
 }
+
 func TestCtx(t *testing.T) {
-	f, err := os.Create("mylog_err.log")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	Init(os.Stdout, os.Stderr, io.MultiWriter(os.Stdout, os.Stderr, f), "tid")
-	tid := 123456 // tid maybe stand for trace id? It can be generated: github.com/vito-go/logging/tid
-	ctx := context.WithValue(context.Background(), "tid", tid)
+	Println("Hello World")
+	Ctx(context.Background()).WithField("heelo", "world").
+		WithFields("nihao", map[string]string{"k1": "v1"},
+			"k2", 222, "UserInfo", UserInfo{Name: "dsf"}, 333, "addf", "as").Info("Hello World")
+	Ctx(context.Background()).WithField("heelo", "world").
+		WithFields("nihao", map[string]string{"k1": "v1"},
+			"k2", 222, "UserInfo", UserInfo{Name: "dsf"}, "addf", "as").Infof("Hello World")
+}
 
-	Ctx(ctx).Info("hello")
-	// [INFO] 2022-01-11 15:48:05.595 mylog_test.go:16 [mylog.TestCtx] hello {"tid":123456}
+// TestPrintf
+func TestPrintf(t *testing.T) {
+	Printf("Hello World")
+	Printf("Hello %s", "World")
+	Printf("Hello %s %d", "World", 123)
+	Printf("Hello %s %d %v", "World", 123, map[string]string{"k1": "v1"})
+	Printf("Hello %s %d %v %v", "World", 123, map[string]string{"k1": "v1"}, UserInfo{Name: "dsf"})
+}
 
-	Ctx(ctx).WithField("name", "jack").Info("hello")
-	// [INFO] 2022-01-11 15:51:26.792 mylog_test.go:17 [mylog.TestCtx] hello {"tid":123456,"name":"jack"}
+// TestPrintln
+func TestPrintln(t *testing.T) {
+	Println("Hello World")
+	Println("Hello", "World")
+	Println("Hello", "World", 123)
+	Println("Hello", "World", 123, map[string]string{"k1": "v1"})
+	Println("Hello", "World", 123, map[string]string{"k1": "v1"}, UserInfo{Name: "dsf"})
+}
 
-	Ctx(ctx).WithField("name", "jack").WithField("age", 18).Warn("hello")
-	// [INFO] 2022-01-11 15:52:21.524 mylog_test.go:21 [mylog.TestCtx] hello {"tid":123456,"name":"jack","age":18}
+// TestError
+func TestError(t *testing.T) {
+	Ctx(context.Background()).Error("Hello World")
+	Ctx(context.Background()).Error("Hello", "World")
+	Ctx(context.Background()).Error("Hello", "World", 123)
+	Ctx(context.Background()).Error("Hello", "World", 123, map[string]string{"k1": "v1"})
+	Ctx(context.Background()).Error("Hello", "World", 123, map[string]string{"k1": "v1"}, UserInfo{Name: "dsf"})
 
-	Ctx(ctx).WithFields("name", "jack", "age", 18).Info("this is jack")
-	Ctx(ctx).WithFields("name", "jack", "age", 18).Error("error this is jack")
-	// [INFO] 2022-01-11 15:51:26.792 mylog_test.go:20 [mylog.TestCtx] this is jack {"tid":123456,"name":"jack","age":18}
-	b := []byte("hello")
-	bPtr:=&b
-	Ctx(ctx).WithField("bPtr", bPtr).Info("bPtr----")
+}
 
-	var bNil []byte
-	bPtr=&bNil
-	Ctx(ctx).WithField("bPtr", bPtr).Info("bPtr----")
-	Ctx(ctx).WithField("AAA", &AAA{}).Info("AAA----")
-
+// TestErrorf
+func TestErrorf(t *testing.T) {
+	Ctx(context.Background()).Errorf("Hello World")
+	Ctx(context.Background()).Errorf("Hello %s", "World")
+	Ctx(context.Background()).Errorf("Hello %s %d", "World", 123)
+	Ctx(context.Background()).Errorf("Hello %s %d %v", "World", 123, map[string]string{"k1": "v1"})
+	Ctx(context.Background()).Errorf("Hello %s %d %v %v", "World", 123, map[string]string{"k1": "v1"}, UserInfo{Name: "dsf"})
 }
