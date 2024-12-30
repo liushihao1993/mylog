@@ -52,8 +52,20 @@ func Println(args ...any) {
 	outPut(context.Background(), l.prefix, l.Writer, LevelInfo, fmt.Sprintln(args...))
 }
 
+// Info logs to the INFO log.
+func Info(args ...any) {
+	l := defaultLogger.defaultInfoLogger
+	outPut(context.Background(), l.prefix, l.Writer, LevelInfo, fmt.Sprintln(args...))
+}
+
 // Printf logs to the INFO log. Compatible with fmt.Printf or log.Printf.
 func Printf(format string, args ...any) {
+	l := defaultLogger.defaultInfoLogger
+	outPut(context.Background(), l.prefix, l.Writer, LevelInfo, fmt.Sprintf(format, args...))
+}
+
+// Infof logs to the INFO log.
+func Infof(format string, args ...any) {
 	l := defaultLogger.defaultInfoLogger
 	outPut(context.Background(), l.prefix, l.Writer, LevelInfo, fmt.Sprintf(format, args...))
 }

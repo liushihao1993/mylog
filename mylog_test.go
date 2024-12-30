@@ -28,6 +28,15 @@ func TestPrintf(t *testing.T) {
 	Printf("Hello %s %d %v %v", "World", 123, map[string]string{"k1": "v1"}, UserInfo{Name: "dsf"})
 }
 
+// TestPrintf
+func TestInfof(t *testing.T) {
+	Infof("Hello World")
+	Infof("Hello %s", "World")
+	Infof("Hello %s %d", "World", 123)
+	Infof("Hello %s %d %v", "World", 123, map[string]string{"k1": "v1"})
+	Infof("Hello %s %d %v %v", "World", 123, map[string]string{"k1": "v1"}, UserInfo{Name: "dsf"})
+}
+
 // TestPrintln
 func TestPrintln(t *testing.T) {
 	Println("Hello World")
@@ -35,6 +44,15 @@ func TestPrintln(t *testing.T) {
 	Println("Hello", "World", 123)
 	Println("Hello", "World", 123, map[string]string{"k1": "v1"})
 	Println("Hello", "World", 123, map[string]string{"k1": "v1"}, UserInfo{Name: "dsf"})
+}
+
+// TestPrintln
+func TestInfo(t *testing.T) {
+	Info("Hello World")
+	Info("Hello", "World")
+	Info("Hello", "World", 123)
+	Info("Hello", "World", 123, map[string]string{"k1": "v1"})
+	Info("Hello", "World", 123, map[string]string{"k1": "v1"}, UserInfo{Name: "dsf"})
 }
 
 // TestError
