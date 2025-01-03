@@ -22,27 +22,20 @@ const (
 	LevelWarn  Level = "WARN"
 )
 
-func InitLogger(verbose bool, infoLogger *lumberjack.Logger, errLogger *lumberjack.Logger, options ...*Option) {
+var debugVerbose bool
+
+func InitLogger(verbose bool, infoLogger *lumberjack.Logger, errLogger *lumberjack.Logger, options ...OptionApplier) {
 	if initOnce.Swap(true) {
 		Ctx(context.Background()).Warn("logger has been initialized")
 		return
 	}
-	var defaultInfoLogger *logger
-	if verbose {
-		defaultInfoLogger = &logger{Writer: io.MultiWriter(infoLogger, os.Stdout), prefix: ""}
-	} else {
-		defaultInfoLogger = &logger{Writer: infoLogger, prefix: ""}
-	}
+	debugVerbose = verbose
+	var defaultInfoLogger = &logger{Writer: infoLogger, prefix: ""}
 	defaultLogger.defaultInfoLogger = defaultInfoLogger
 	defaultLogger.defaultWarnLogger = &logger{Writer: io.MultiWriter(errLogger, defaultInfoLogger), prefix: ""}
 	defaultLogger.defaultErrorLogger = &logger{Writer: io.MultiWriter(errLogger, defaultInfoLogger), prefix: ""}
 	for _, option := range options {
-		prefix := fmt.Sprintf("[%s] ", option.LogName)
-		defaultLogger.logMap[option.LogName] = &loggerWithLevel{
-			infoLogger:  &logger{Writer: io.MultiWriter(option.Logger, defaultInfoLogger), prefix: prefix},
-			warnLogger:  &logger{Writer: io.MultiWriter(option.Logger, errLogger, defaultInfoLogger), prefix: prefix},
-			errorLogger: &logger{Writer: io.MultiWriter(option.Logger, errLogger, defaultInfoLogger), prefix: prefix},
-		}
+		option.Apply(defaultLogger)
 	}
 }
 
@@ -233,6 +226,9 @@ type Logger struct {
 	closed             atomic.Bool // false: open, true: closed
 	async              atomic.Bool //default false, if true, write log async
 	hook               func(ctx context.Context, hookRecord *HookRecord)
+	// newField
+	hideFileLine atomic.Bool
+	hideFunction atomic.Bool
 }
 
 // HookRecord file string, line int, function string, level Level, content string, stack string
@@ -292,12 +288,26 @@ func outPut(ctx context.Context, prefix string, writer io.Writer, level Level, c
 		file = filepath.Base(f.File)
 		line = f.Line
 	}
+	var fileLineFunction string
+	if !defaultLogger.hideFileLine.Load() || !defaultLogger.hideFunction.Load() {
+		if !defaultLogger.hideFileLine.Load() {
+			fileLineFunction = fmt.Sprintf(" %s:%d ", file, line)
+			if !defaultLogger.hideFunction.Load() {
+				fileLineFunction += fmt.Sprintf("%s ", function)
+			}
+		} else {
+			if !defaultLogger.hideFunction.Load() {
+				fileLineFunction = fmt.Sprintf(" %s ", function)
+			}
+		}
+	}
+
 	buf := getBuffer()
 	// Dont putBuffer(buf) until the task is done
 	ctxValue, _ := ctx.Value(TraceIdKey).(string)
 	*buf = append([]byte(fmt.Sprintf(
-		"%s[%s] %s %s:%d %s traceId:%1s ",
-		prefix, level, time.Now().Format(`2006-01-02T15:04:05.000`), file, line, function, ctxValue)),
+		"%s[%s] %s%s traceId:%1s ",
+		prefix, level, time.Now().Format(`2006-01-02T15:04:05.000`), fileLineFunction, ctxValue)),
 		content...)
 	if len(*buf) == 0 || (*buf)[len(*buf)-1] != '\n' {
 		*buf = append(*buf, '\n')
@@ -324,7 +334,14 @@ func outPut(ctx context.Context, prefix string, writer io.Writer, level Level, c
 		return
 	}
 	// closed
-	writer.Write(*buf)
+	_, _ = writer.Write(*buf)
+	if debugVerbose {
+		if level == LevelInfo {
+			_, _ = os.Stdout.Write(*buf)
+		} else {
+			_, _ = os.Stderr.Write(*buf)
+		}
+	}
 	//we call hook after write to file by order
 	if hook := defaultLogger.hook; hook != nil {
 		stack := string(callerStack(skip))
