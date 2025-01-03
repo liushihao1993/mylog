@@ -291,13 +291,13 @@ func outPut(ctx context.Context, prefix string, writer io.Writer, level Level, c
 	var fileLineFunction string
 	if !defaultLogger.hideFileLine.Load() || !defaultLogger.hideFunction.Load() {
 		if !defaultLogger.hideFileLine.Load() {
-			fileLineFunction = fmt.Sprintf(" %s:%d ", file, line)
+			fileLineFunction = fmt.Sprintf(" %s:%d", file, line)
 			if !defaultLogger.hideFunction.Load() {
-				fileLineFunction += fmt.Sprintf("%s ", function)
+				fileLineFunction += fmt.Sprintf(" %s", function)
 			}
 		} else {
 			if !defaultLogger.hideFunction.Load() {
-				fileLineFunction = fmt.Sprintf(" %s ", function)
+				fileLineFunction = fmt.Sprintf(" %s", function)
 			}
 		}
 	}
