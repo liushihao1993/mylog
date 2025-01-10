@@ -20,7 +20,7 @@ var ipCode int64
 func init() {
 	priIP, err := getPrivateIP()
 	if err != nil {
-		fmt.Println("get private ip error", err)
+		Ctx(context.Background()).Warnf("mylog: ipCode inti failed. getPriIP error: %v", err)
 		return
 	}
 	var ipCodeStr string
